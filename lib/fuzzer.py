@@ -97,17 +97,18 @@ class Fuzzer(object):
             url = "%s'" % item.split('&')[0]
             if "http" not in url:
                 url = "http://%s" % url
-            if not self.session._target_exists_in_db(url):
-                print("Testing %s" % url)
+            fixed_url = url.replace('///', '//')
+            if not self.session._target_exists_in_db(fixed_url):
+                print("Testing %s" % fixed_url)
                 try:
-                    response = self.websession.get(url, timeout=5)
+                    response = self.websession.get(fixed_url, timeout=5)
                 except:
-                    print("Yucky URL: %s" % url)
+                    print("Yucky URL: %s" % fixed_url)
                     return
                 for regex in relist:
                     if re.search(regex, response.text.lower()):
-                        print("Potentially vulnerable: %s" % url)
-                        self.session.add_target(url)
+                        print("Potentially vulnerable: %s" % fixed_url)
+                        self.session.add_target(fixed_url)
                         return
                     else:
                         continue
