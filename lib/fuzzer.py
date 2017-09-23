@@ -28,7 +28,14 @@ class Fuzzer(object):
                 'stackoverflow.com',
                 'sqlvulnerablewebsites'
                 ]
+        self.domains = ['com', 'co.uk', 'ws', 'com.au']
+        self.bogus_queries = ['amazon', 'google', 'facebook', 'twitter']
         self.session = DatabaseSession()
+        self.websession = requests.Session()
+        self.websession.headers.update(
+            { 'User-Agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36'}
+        )
+        self.last_domain = None
         self.pages = pages
 
     def _skip_url(self, url):
@@ -37,22 +44,15 @@ class Fuzzer(object):
                 return True
         return False
 
-    def run_scan(self):
-        for query in self.queries:
-            results = self.get_endpoints(query)
-            self.test_endpoints(results)
-            print("Sleeping an additional 15 seconds")
-            sleep(15)
-            
-    def get_endpoints(self, query):
-        domains = ['com', 'co.uk', 'ws', 'com.au']
-        results = []
-        suffix = None
-        last_domain = None
-        for i in range(1, (self.pages+1)):
-            while suffix == last_domain:
-                suffix = choice(domains)
-            if i == 1:
+    def _send_bogus_query(self):
+        query = choice(self.bogus_queries)
+        self._send_query(query)
+
+    def _send_query(self, query, page=1):
+        suffix = self.last_domain
+        while suffix == self.last_domain:
+            suffix = choice(self.domains)
+            if page == 1:
                 address= "https://www.google.%s/search?q=%s" % (
                         suffix,
                         query
@@ -61,10 +61,24 @@ class Fuzzer(object):
                 address= "https://www.google.%s/search?q=%s&start=%s" % (
                         suffix,
                         query,
-                        str(i*10)
+                        str(page*10)
                     )
-            print("Scraping %s: Page %s" % (address, i))
-            page = requests.get(address)
+        print("Querying %s: Page %s" % (address, page))
+        self.last_domain = suffix
+        return self.websession.get(address)
+
+    def run_scan(self):
+        for query in self.queries:
+            results = self.get_endpoints(query)
+            self.test_endpoints(results)
+            print("Sending bogus query and sleeping additional 15 seconds")
+            self._send_bogus_query()
+            sleep(15)
+            
+    def get_endpoints(self, query):
+        results = []
+        for i in range(1, (self.pages+1)):
+            page = self._send_query(query, page=i)
             if re.search('captcha', page.text.lower()):
                 print("Detected captcha. We got got. Exiting")
                 exit(1)
@@ -73,7 +87,6 @@ class Fuzzer(object):
                 for item in soup.find_all('h3', attrs={'class' : 'r'}):
                     results.append(item.a['href'][7:])
             print("Finished page %s. Sleeping 15 seconds" % i)
-            last_domain = suffix
             sleep(15)
         return results
 
@@ -85,7 +98,7 @@ class Fuzzer(object):
                 if not self.session._target_exists_in_db(url):
                     print("Testing %s" % url)
                     try:
-                        response = requests.get(url, timeout=5)
+                        response = self.websession.get(url, timeout=5)
                     except KeyboardInterrupt:
                         exit(1)
                     except:
