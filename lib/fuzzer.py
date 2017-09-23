@@ -9,31 +9,60 @@ import re
 
 class Fuzzer(object):
 
-    def __init__(self):
-        self.queries = ["inurl%3A+.php%3Fid%3D1","inurl%3A+.php%3Fid%3D2","inurl%3A+.php%3Fid%3D3",
-                    "inurl%3A+.php%3Fid%3D4","inurl%3A+.php%3Fid%3D5","inurl%3A+.php%3Fid%3D6",
-                    "inurl%3A+.php%3Fid%3D7","inurl%3A+.php%3Fid%3D8","inurl%3A+.php%3Fid%3D9",
-                    "inurl%3A+search.php%3Fq%3D",]
+    def __init__(self, pages=3):
+        self.queries = [
+                "inurl%3A+.php%3Fid%3D1",
+                "inurl%3A+.php%3Fid%3D2",
+                "inurl%3A+.php%3Fid%3D3",
+                "inurl%3A+.php%3Fid%3D4",
+                "inurl%3A+.php%3Fid%3D5",
+                "inurl%3A+.php%3Fid%3D6",
+                "inurl%3A+.php%3Fid%3D7",
+                "inurl%3A+.php%3Fid%3D8",
+                "inurl%3A+.php%3Fid%3D9",
+                "inurl%3A+search.php%3Fq%3D"
+                ]
         self.session = DatabaseSession()
+        self.pages = pages
 
     def run_scan(self):
-        results = self.get_endpoints()
-        self.test_endpoints(results)
-
-    def get_endpoints(self):
-        results = []
         for query in self.queries:
-            print("Trying %s" % query)
-            address= "https://www.google.co.uk/search?q=%s" % query
+            results = self.get_endpoints(query)
+            self.test_endpoints(results)
+            
+    def get_endpoints(self, query):
+        domains = ['com', 'co.uk']
+        results = []
+        index = 0
+        for i in range(1, (self.pages+1)):
+            if index == (len(domains)-1):
+                suffix = domains[index]
+                index = 0
+            else:
+                suffix = domains[index]
+                index+=1
+            if i == 1:
+                address= "https://www.google.%s/search?q=%s" % (
+                        suffix,
+                        query
+                    )
+            else:
+                address= "https://www.google.%s/search?q=%s&start=%s" % (
+                        suffix,
+                        query,
+                        str(i*10)
+                    )
+            print("Scraping %s: Page %s" % (address, i))
             page = requests.get(address)
-            if re.search('captcha', page.text):
-                print("Detected captcha")
+            if re.search('captcha', page.text.lower()):
+                print("Detected captcha. We got got. Exiting")
+                exit(1)
             else:
                 soup = bs4.BeautifulSoup(page.text,"html.parser")
                 for item in soup.find_all('h3', attrs={'class' : 'r'}):
                     results.append(item.a['href'][7:])
-                print("Finished %s. Sleeping for 7 seconds" % query)
-            sleep(7)
+            print("Finished page %s. Sleeping 10 seconds" % i)
+            sleep(10)
         return results
 
     def test_endpoints(self, results):
