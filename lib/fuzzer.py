@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from lib.dbconnection import DatabaseSession
+from random import choice
 from time import sleep
 from sys import exit
 import bs4
@@ -33,14 +34,8 @@ class Fuzzer(object):
     def get_endpoints(self, query):
         domains = ['com', 'co.uk', 'ws', 'com.au']
         results = []
-        index = 0
         for i in range(1, (self.pages+1)):
-            if index == (len(domains)-1):
-                suffix = domains[index]
-                index = 0
-            else:
-                suffix = domains[index]
-                index+=1
+            suffix = choice(domains)
             if i == 1:
                 address= "https://www.google.%s/search?q=%s" % (
                         suffix,
