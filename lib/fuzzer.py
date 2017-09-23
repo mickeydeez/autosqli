@@ -23,8 +23,18 @@ class Fuzzer(object):
                 "inurl%3A+.php%3Fid%3D9",
                 "inurl%3A+search.php%3Fq%3D"
                 ]
+        self.filters = [
+                'facebook.com',
+                'stackoverflow.com'
+                ]
         self.session = DatabaseSession()
         self.pages = pages
+
+    def _skip_url(self, url):
+        for item in self.filters:
+            if item in url:
+                return True
+        return False
 
     def run_scan(self):
         for query in self.queries:
@@ -35,7 +45,10 @@ class Fuzzer(object):
         domains = ['com', 'co.uk', 'ws', 'com.au']
         results = []
         for i in range(1, (self.pages+1)):
-            suffix = choice(domains)
+            suffix = None
+            last_domain = None
+            while suffix == last_domain:
+                suffix = choice(domains)
             if i == 1:
                 address= "https://www.google.%s/search?q=%s" % (
                         suffix,
@@ -57,24 +70,26 @@ class Fuzzer(object):
                 for item in soup.find_all('h3', attrs={'class' : 'r'}):
                     results.append(item.a['href'][7:])
             print("Finished page %s. Sleeping 10 seconds" % i)
+            last_domain = suffix
             sleep(10)
         return results
 
     def test_endpoints(self, results):
         relist = ["sql", "syntax"]
         for item in results:
-            url = "%s'" % item.split('&')[0]
-            print("Testing %s" % url)
-            try:
-                response = requests.get(url, timeout=5)
-            except KeyboardInterrupt:
-                exit(1)
-            except:
-                print("Yucky URL: %s'" % url)
-                continue
-            for regex in relist:
-                if re.search(regex, response.text.lower()):
-                    print("Potentially vulnerable: %s" % url)
-                    self.session.add_target(url)
-                else:
+            if not self._skip_url(item):
+                url = "%s'" % item.split('&')[0]
+                print("Testing %s" % url)
+                try:
+                    response = requests.get(url, timeout=5)
+                except KeyboardInterrupt:
+                    exit(1)
+                except:
+                    print("Yucky URL: %s'" % url)
                     continue
+                for regex in relist:
+                    if re.search(regex, response.text.lower()):
+                        print("Potentially vulnerable: %s" % url)
+                        self.session.add_target(url)
+                    else:
+                        continue
