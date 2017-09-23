@@ -31,7 +31,8 @@ class Fuzzer(object):
                 'vulnerable',
                 'hacking',
                 'sec4sec',
-                'cybraryit'
+                'cybraryit',
+                'sql-injection'
                 ]
         self.domains = ['com', 'co.uk', 'ws', 'com.au']
         self.bogus_queries = ['amazon', 'google', 'facebook', 'twitter']
