@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from lib.dbconnection import DatabaseSession
-from random import choice
+from random import choice, randint
 from time import sleep
 from sys import exit
 import bs4
@@ -10,7 +10,7 @@ import re
 
 class Fuzzer(object):
 
-    def __init__(self, pages=2):
+    def __init__(self):
         self.queries = [
                 "inurl%3A+.php%3Fid%3D1",
                 "inurl%3A+.php%3Fid%3D2",
@@ -36,7 +36,6 @@ class Fuzzer(object):
             { 'User-Agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36'}
         )
         self.last_domain = None
-        self.pages = pages
 
     def _skip_url(self, url):
         for item in self.filters:
@@ -48,22 +47,17 @@ class Fuzzer(object):
         query = choice(self.bogus_queries)
         self._send_query(query)
 
-    def _send_query(self, query, page=1):
+    def _send_query(self, query):
         suffix = self.last_domain
+        pageno = randint(1,10)
         while suffix == self.last_domain:
             suffix = choice(self.domains)
-            if page == 1:
-                address= "https://www.google.%s/search?q=%s" % (
-                        suffix,
-                        query
-                    )
-            else:
-                address= "https://www.google.%s/search?q=%s&start=%s" % (
+            address= "https://www.google.%s/search?q=%s&start=%s" % (
                         suffix,
                         query,
-                        str(page*10)
-                    )
-        print("Querying %s: Page %s" % (address, page))
+                        str(pageno*10)
+                )
+        print("Querying %s: Page %s" % (address, pageno))
         self.last_domain = suffix
         return self.websession.get(address)
 
@@ -78,17 +72,16 @@ class Fuzzer(object):
             
     def get_endpoints(self, query):
         results = []
-        for i in range(1, (self.pages+1)):
-            page = self._send_query(query, page=i)
-            if re.search('captcha', page.text.lower()):
-                print("Detected captcha. We got got. Exiting")
-                exit(1)
-            else:
-                soup = bs4.BeautifulSoup(page.text,"html.parser")
-                for item in soup.find_all('h3', attrs={'class' : 'r'}):
-                    results.append(item.a['href'][7:])
-            print("Finished page %s. Sleeping 15 seconds" % i)
-            sleep(15)
+        page = self._send_query(query)
+        if re.search('captcha', page.text.lower()):
+            print("Detected captcha. We got got. Exiting")
+            exit(1)
+        else:
+            soup = bs4.BeautifulSoup(page.text,"html.parser")
+            for item in soup.find_all('h3', attrs={'class' : 'r'}):
+                results.append(item.a['href'][7:])
+        print("Finished page. Sleeping 15 seconds")
+        sleep(15)
         return results
 
     def test_endpoint(self, item):
