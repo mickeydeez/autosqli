@@ -44,9 +44,9 @@ class Fuzzer(object):
     def get_endpoints(self, query):
         domains = ['com', 'co.uk', 'ws', 'com.au']
         results = []
+        suffix = None
+        last_domain = None
         for i in range(1, (self.pages+1)):
-            suffix = None
-            last_domain = None
             while suffix == last_domain:
                 suffix = choice(domains)
             if i == 1:
