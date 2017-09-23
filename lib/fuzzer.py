@@ -25,7 +25,8 @@ class Fuzzer(object):
                 ]
         self.filters = [
                 'facebook.com',
-                'stackoverflow.com'
+                'stackoverflow.com',
+                'sqlvulnerablewebsites'
                 ]
         self.session = DatabaseSession()
         self.pages = pages
@@ -40,6 +41,8 @@ class Fuzzer(object):
         for query in self.queries:
             results = self.get_endpoints(query)
             self.test_endpoints(results)
+            print("Sleeping an additional 15 seconds")
+            sleep(15)
             
     def get_endpoints(self, query):
         domains = ['com', 'co.uk', 'ws', 'com.au']
@@ -69,9 +72,9 @@ class Fuzzer(object):
                 soup = bs4.BeautifulSoup(page.text,"html.parser")
                 for item in soup.find_all('h3', attrs={'class' : 'r'}):
                     results.append(item.a['href'][7:])
-            print("Finished page %s. Sleeping 10 seconds" % i)
+            print("Finished page %s. Sleeping 15 seconds" % i)
             last_domain = suffix
-            sleep(10)
+            sleep(15)
         return results
 
     def test_endpoints(self, results):
@@ -79,17 +82,18 @@ class Fuzzer(object):
         for item in results:
             if not self._skip_url(item):
                 url = "%s'" % item.split('&')[0]
-                print("Testing %s" % url)
-                try:
-                    response = requests.get(url, timeout=5)
-                except KeyboardInterrupt:
-                    exit(1)
-                except:
-                    print("Yucky URL: %s'" % url)
-                    continue
-                for regex in relist:
-                    if re.search(regex, response.text.lower()):
-                        print("Potentially vulnerable: %s" % url)
-                        self.session.add_target(url)
-                    else:
+                if not self.session._target_exists_in_db(url):
+                    print("Testing %s" % url)
+                    try:
+                        response = requests.get(url, timeout=5)
+                    except KeyboardInterrupt:
+                        exit(1)
+                    except:
+                        print("Yucky URL: %s'" % url)
                         continue
+                    for regex in relist:
+                        if re.search(regex, response.text.lower()):
+                            print("Potentially vulnerable: %s" % url)
+                            self.session.add_target(url)
+                        else:
+                            continue
