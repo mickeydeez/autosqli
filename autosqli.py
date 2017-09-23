@@ -7,7 +7,10 @@ from sys import exit
 
 def run():
     args = parse_args()
-    fuzz = Fuzzer()
+    if args.loops:
+        fuzz = Fuzzer(loops=args.loops)
+    else:
+        fuzz = Fuzzer()
     if args.scan:
         fuzz.run_scan()
     if args.read:
@@ -30,6 +33,14 @@ def parse_args():
         const=True,
         dest='read',
         help="Dump local target database"
+    )
+    parser.add_argument(
+        '-l',
+        '--loop',
+        action='store_const',
+        const=True,
+        dest='loops',
+        help="Number of scrapes to do. Default is 5"
     )
     args = parser.parse_args()
     if not args.scan and not args.read:

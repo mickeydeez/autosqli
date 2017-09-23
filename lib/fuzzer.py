@@ -10,7 +10,8 @@ import re
 
 class Fuzzer(object):
 
-    def __init__(self):
+    def __init__(self, loops=5):
+        self.loops = loops
         self.queries = [
                 "inurl%3A+.php%3Fid%3D1",
                 "inurl%3A+.php%3Fid%3D2",
@@ -37,7 +38,7 @@ class Fuzzer(object):
         self.session = DatabaseSession()
         self.websession = requests.Session()
         self.websession.headers.update(
-            { 'User-Agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36'}
+            {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36'}
         )
         self.last_domain = None
 
@@ -53,7 +54,7 @@ class Fuzzer(object):
 
     def _send_query(self, query):
         suffix = self.last_domain
-        pageno = randint(1,10)
+        pageno = randint(1,20)
         while suffix == self.last_domain:
             suffix = choice(self.domains)
             address= "https://www.google.%s/search?q=%s&start=%s" % (
@@ -66,7 +67,9 @@ class Fuzzer(object):
         return self.websession.get(address)
 
     def run_scan(self):
-        for query in self.queries:
+        print("Starting scan. Will run %s queries" % self.loops)
+        for i in range(0, self.loops):
+            query = choice(self.queries)
             results = self.get_endpoints(query)
             for item in results:
                 self.test_endpoint(item)
