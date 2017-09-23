@@ -31,7 +31,7 @@ class Fuzzer(object):
             self.test_endpoints(results)
             
     def get_endpoints(self, query):
-        domains = ['com', 'co.uk', 'co.ar', 'co.il']
+        domains = ['com', 'co.uk', 'ws', 'com.au']
         results = []
         index = 0
         for i in range(1, (self.pages+1)):
