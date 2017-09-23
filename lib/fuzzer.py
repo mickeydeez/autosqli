@@ -27,7 +27,9 @@ class Fuzzer(object):
                 'facebook.com',
                 'stackoverflow.com',
                 'sqlvulnerablewebsites',
-                'vulnerable'
+                'vulnerable',
+                'hacking',
+                'sec4sec'
                 ]
         self.domains = ['com', 'co.uk', 'ws', 'com.au']
         self.bogus_queries = ['amazon', 'google', 'facebook', 'twitter']
