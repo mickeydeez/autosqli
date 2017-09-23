@@ -10,7 +10,7 @@ import re
 
 class Fuzzer(object):
 
-    def __init__(self, pages=1):
+    def __init__(self, pages=2):
         self.queries = [
                 "inurl%3A+.php%3Fid%3D1",
                 "inurl%3A+.php%3Fid%3D2",
