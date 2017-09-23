@@ -11,7 +11,7 @@ import re
 class Fuzzer(object):
 
     def __init__(self, loops=5):
-        self.loops = loops
+        self.loops = int(loops)
         self.queries = [
                 "inurl%3A+.php%3Fid%3D1",
                 "inurl%3A+.php%3Fid%3D2",

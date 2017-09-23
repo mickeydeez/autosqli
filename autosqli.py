@@ -37,8 +37,7 @@ def parse_args():
     parser.add_argument(
         '-l',
         '--loop',
-        action='store_const',
-        const=True,
+        action='store',
         dest='loops',
         help="Number of scrapes to do. Default is 5"
     )
