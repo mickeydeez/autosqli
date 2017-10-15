@@ -10,20 +10,16 @@ import re
 
 class Fuzzer(object):
 
-    def __init__(self, loops=5):
+    def __init__(self, loops=5, dork_file=None):
         self.loops = int(loops)
-        self.queries = [
-                "inurl%3A+.php%3Fid%3D1",
-                "inurl%3A+.php%3Fid%3D2",
-                "inurl%3A+.php%3Fid%3D3",
-                "inurl%3A+.php%3Fid%3D4",
-                "inurl%3A+.php%3Fid%3D5",
-                "inurl%3A+.php%3Fid%3D6",
-                "inurl%3A+.php%3Fid%3D7",
-                "inurl%3A+.php%3Fid%3D8",
-                "inurl%3A+.php%3Fid%3D9",
-                "inurl%3A+search.php%3Fq%3D"
-                ]
+        if dork_file:
+            try:
+                with open(dork_file, 'r') as f:
+                    self.queries = f.readlines()
+            except:
+                exit("Invalid dork file!")
+        else:
+            exit("No dork list specified!")
         self.filters = [
                 'facebook.com',
                 'stackoverflow.com',

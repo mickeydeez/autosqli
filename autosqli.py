@@ -8,9 +8,9 @@ from sys import exit
 def run():
     args = parse_args()
     if args.loops:
-        fuzz = Fuzzer(loops=args.loops)
+        fuzz = Fuzzer(loops=args.loops, dork_file=args.dork_file)
     else:
-        fuzz = Fuzzer()
+        fuzz = Fuzzer(dork_file=args.dork_file)
     if args.scan:
         fuzz.run_scan()
     if args.read:
@@ -41,8 +41,18 @@ def parse_args():
         dest='loops',
         help="Number of scrapes to do. Default is 5"
     )
+    parser.add_argument(
+        '-f',
+        '--file',
+        action='store',
+        dest='dork_file',
+        help="Path to newline seperated list of dorks"
+    )
     args = parser.parse_args()
     if not args.scan and not args.read:
+        parser.print_help()
+        exit(1)
+    if args.scan and not args.dork_file:
         parser.print_help()
         exit(1)
     return args
