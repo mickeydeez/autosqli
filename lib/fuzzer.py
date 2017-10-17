@@ -8,6 +8,8 @@ import bs4
 import requests
 import re
 
+agent_url = "https://techblog.willshouse.com/2012/01/03/most-common-user-agents/"
+
 class Fuzzer(object):
 
     def __init__(self, loops=5, dork_file=None):
@@ -33,11 +35,13 @@ class Fuzzer(object):
         self.domains = ['com', 'co.uk', 'ws', 'com.au']
         self.bogus_queries = ['amazon', 'google', 'facebook', 'twitter']
         self.session = DatabaseSession()
+        self.user_agents = self.get_user_agents()
         self.websession = requests.Session()
-        self.websession.headers.update(
-            {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36'}
-        )
+        self.websession.headers.update({'User-Agent': choice(self.user_agents)})
         self.last_domain = None
+
+    def _reset_user_agent(self):
+        self.websession.headers.update({'User-Agent': choice(self.user_agents)})
 
     def _skip_url(self, url):
         for item in self.filters:
@@ -61,7 +65,19 @@ class Fuzzer(object):
                 )
         print("Querying %s: Page %s" % (address, pageno))
         self.last_domain = suffix
+        self._reset_user_agent()
         return self.websession.get(address)
+
+
+    def get_user_agents(self):
+        user_agents = []
+        response = requests.get(agent_url)
+        lines = response.content.split(b'\n')
+        for line in lines:
+            if b"Mozilla" in line and not b"<" in line:
+                user_agents.append(line)
+        return user_agents
+
 
     def run_scan(self):
         print("Starting scan. Will run %s queries" % self.loops)
