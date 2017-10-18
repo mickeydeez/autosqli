@@ -9,6 +9,8 @@ def run():
     args = parse_args()
     if args.loops:
         fuzz = Fuzzer(loops=args.loops, dork_file=args.dork_file)
+    elif args.read:
+        fuzz = Fuzzer(dork_file=args.dork_file, read=True)
     else:
         fuzz = Fuzzer(dork_file=args.dork_file)
     if args.scan:

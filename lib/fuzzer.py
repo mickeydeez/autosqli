@@ -12,7 +12,7 @@ agent_url = "https://techblog.willshouse.com/2012/01/03/most-common-user-agents/
 
 class Fuzzer(object):
 
-    def __init__(self, loops=5, dork_file=None):
+    def __init__(self, loops=5, dork_file=None, read=False):
         self.loops = int(loops)
         if dork_file:
             try:
@@ -20,6 +20,8 @@ class Fuzzer(object):
                     self.queries = f.readlines()
             except:
                 exit("Invalid dork file!")
+        elif read == True:
+            pass
         else:
             exit("No dork list specified!")
         self.filters = [
@@ -27,10 +29,11 @@ class Fuzzer(object):
                 'stackoverflow.com',
                 'sqlvulnerablewebsites',
                 'vulnerable',
-                'hacking',
+                'hack',
                 'sec4sec',
                 'cybraryit',
-                'sql-injection'
+                'sql-injection',
+                'youtube'
                 ]
         self.domains = ['com', 'co.uk', 'ws', 'com.au']
         self.bogus_queries = ['amazon', 'google', 'facebook', 'twitter']
@@ -71,12 +74,30 @@ class Fuzzer(object):
 
     def get_user_agents(self):
         user_agents = []
-        response = requests.get(agent_url)
-        lines = response.content.split(b'\n')
-        for line in lines:
-            if b"Mozilla" in line and not b"<" in line:
-                user_agents.append(line)
-        return user_agents
+        try:
+            print("Trying to load user agents...")
+            response = requests.get(agent_url, timeout=10)
+        except:
+            print("Could not sync user agents from the internet")
+            response = None
+        if response:
+            lines = response.content.split(b"\n")
+            for line in lines:
+                if b"Mozilla" in line and not b"<" in line:
+                    user_agents.append(line)
+            with open("user_agents", "w") as f:
+                for agent in user_agents:
+                    f.write("%s\n" % agent.decode('utf-8'))
+            return user_agents
+        else:
+            try:
+                with open("user_agents", "r") as f:
+                    agents = f.readlines()
+                for agent in agents:
+                    user_agents.append(agent.strip())
+                return user_agents 
+            except:
+                exit("Could not load any user agents")
 
 
     def run_scan(self):
