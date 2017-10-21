@@ -2,20 +2,33 @@
 
 ## lib/database.py
 
-from lib import db
+import os
+from sqlalchemy import Column, Text, Integer, create_engine
+from sqlalchemy.orm import sessionmaker, scoped_session
+from sqlalchemy.ext.declarative import declarative_base
 
-class DatabaseTypes(db.Model):
-    __tablename__ = 'database_types'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(32))
-    targets = db.relationship('Targets', backref='database_types')
+basedir = os.path.abspath(os.path.dirname(__file__))
 
-class Targets(db.Model):
+engine = create_engine(
+    'sqlite:///%s' % os.path.join(basedir, 'data.sqlite'),
+    connect_args={'check_same_thread': False}
+)
+
+Base = declarative_base()
+
+class Targets(Base):
     __tablename__ = 'targets'
-    id = db.Column(db.Integer, primary_key=True)
-    url = db.Column(db.Text)
-    db_typeid = db.Column(db.Integer, db.ForeignKey('database_types.id'))
+    id = Column(Integer, primary_key=True)
+    url = Column(Text)
     
-class Queries(db.Model):
-    __tablename__ = 'queries'
-    id = db.Column(db.Integer, primary_key=True)
+Base.metadata.create_all(engine)
+
+Scoped = scoped_session(
+    sessionmaker(
+        autoflush=True,
+        autocommit=False,
+        bind=engine
+    )
+)
+
+session = Scoped()

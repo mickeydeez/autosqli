@@ -2,47 +2,31 @@
 
 ## lib/dbconnection.py
 
-from lib import db, database
+from lib.database import Base, Targets, session, engine
 
 class DatabaseSession(object):
 
     def __init__(self):
-        self.db = db
-        self.db.create_all()
-        self._init_db()
-
-    def _init_db(self):
-        for engine in ['mysql', 'postgres']:
-            lookup = database.DatabaseTypes.query.filter_by(name=engine).first()
-            if not lookup:
-                new_engine = database.DatabaseTypes(name=engine)
-                self.db.session.add(new_engine)
-                self.db.session.commit()
+        self.base = Base
+        self.session = session
+        self.engine = engine
+        self.base.metadata.create_all(self.engine)
 
     def _target_exists_in_db(self, target):
-        lookup = database.Targets.query.filter_by(url=target).first()
+        lookup = self.session.query(Targets).filter_by(url=target).first()
         if not lookup:
             return False
         else:
             return True
 
-    def _lookup_type_id(self, id):
-        if not id:
-            return None
-        lookup = database.DatabaseTypes.query.filter_by(id=id).first()
-        if lookup:
-            return lookup.name
-        else:
-            return None
-
     def read(self):
-        lookup = database.Targets.query.all()
+        lookup = self.session.query(Targets).all()
         for item in lookup:
-            print("%s - %s - %s" % (item.id, item.url, self._lookup_type_id(item.db_typeid)))
+            print("%s - %s" % (item.id, item.url))
 
     def add_target(self, target):
         if not self._target_exists_in_db(target):
-            new_target = database.Targets(url=target)
-            self.db.session.add(new_target)
-            self.db.session.commit()
+            new_target = Targets(url=target)
+            self.session.add(new_target)
+            self.session.commit()
 
