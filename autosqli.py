@@ -11,12 +11,15 @@ def run():
         fuzz = Fuzzer(loops=args.loops, dork_file=args.dork_file)
     elif args.read:
         fuzz = Fuzzer(dork_file=args.dork_file, read=True)
+    elif args.user_agent:
+        fuzz = Fuzzer(dork_file=args.dork_file, user_agent=True)
     else:
         fuzz = Fuzzer(dork_file=args.dork_file)
     if args.scan:
         fuzz.run_scan()
     if args.read:
         DatabaseSession().read()
+
 
 def parse_args():
     parser = ArgumentParser()
@@ -50,6 +53,14 @@ def parse_args():
         dest='dork_file',
         help="Path to newline seperated list of dorks"
     )
+    parser.add_argument(
+        '-u',
+        '--user_agent',
+        action='store_const',
+        const=True,
+        dest='user_agent',
+        help="Get new user agents"
+    )     
     args = parser.parse_args()
     if not args.scan and not args.read:
         parser.print_help()

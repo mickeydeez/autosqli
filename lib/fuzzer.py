@@ -12,8 +12,35 @@ agent_url = "https://techblog.willshouse.com/2012/01/03/most-common-user-agents/
 
 class Fuzzer(object):
 
-    def __init__(self, loops=5, dork_file=None, read=False):
+    def __init__(self, loops=5, dork_file=None, read=False, user_agent=False):
         self.loops = int(loops)
+        
+        user_agents = []
+                
+        if user_agent == True:
+            try:
+                print("Trying to load user agents...")
+                response = requests.get(agent_url, timeout=10)
+            except:
+                print("Could not sync user agents from the internet")
+                response = None
+            if response:
+                lines = response.content.split(b"\n")
+                for line in lines:
+                    if b"Mozilla" in line and not b"<" in line:
+                        user_agents.append(line)
+                with open("user_agents", "w") as f:
+                    for agent in user_agents:
+                        f.write("%s\n" % agent.decode('utf-8'))
+        else:
+                try:
+                    with open("user_agents", "r") as f:
+                        agents = f.readlines()
+                    for agent in agents:
+                        user_agents.append(agent.strip())
+                except:
+                    exit("Could not load any user agents")
+            
         if dork_file:
             try:
                 with open(dork_file, 'r') as f:
@@ -24,6 +51,7 @@ class Fuzzer(object):
             pass
         else:
             exit("No dork list specified!")
+            
         self.filters = [
                 'facebook.com',
                 'stackoverflow.com',
@@ -38,7 +66,7 @@ class Fuzzer(object):
         self.domains = ['com', 'co.uk', 'ws', 'com.au']
         self.bogus_queries = ['amazon', 'google', 'facebook', 'twitter']
         self.session = DatabaseSession()
-        self.user_agents = self.get_user_agents()
+        self.user_agents = user_agents
         self.websession = requests.Session()
         self.websession.headers.update({'User-Agent': choice(self.user_agents)})
         self.last_domain = None
@@ -70,35 +98,6 @@ class Fuzzer(object):
         self.last_domain = suffix
         self._reset_user_agent()
         return self.websession.get(address)
-
-
-    def get_user_agents(self):
-        user_agents = []
-        try:
-            print("Trying to load user agents...")
-            response = requests.get(agent_url, timeout=10)
-        except:
-            print("Could not sync user agents from the internet")
-            response = None
-        if response:
-            lines = response.content.split(b"\n")
-            for line in lines:
-                if b"Mozilla" in line and not b"<" in line:
-                    user_agents.append(line)
-            with open("user_agents", "w") as f:
-                for agent in user_agents:
-                    f.write("%s\n" % agent.decode('utf-8'))
-            return user_agents
-        else:
-            try:
-                with open("user_agents", "r") as f:
-                    agents = f.readlines()
-                for agent in agents:
-                    user_agents.append(agent.strip())
-                return user_agents 
-            except:
-                exit("Could not load any user agents")
-
 
     def run_scan(self):
         print("Starting scan. Will run %s queries" % self.loops)
@@ -146,4 +145,6 @@ class Fuzzer(object):
                         return
                     else:
                         continue
+
+
 
